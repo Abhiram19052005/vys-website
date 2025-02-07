@@ -12,7 +12,7 @@ app.use(cors());
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "root",  // Change if necessary
+  password: "root",  // Change if needed
   database: "vys",
 });
 
@@ -24,7 +24,7 @@ db.connect((err) => {
   console.log("✅ MySQL Connected...");
 });
 
-// User & Admin Login API
+// Admin & User Login API
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
 
@@ -33,7 +33,7 @@ app.post("/api/login", (req, res) => {
   }
 
   const sql = "SELECT * FROM users WHERE email = ?";
-  db.query(sql, [email], async (err, results) => {
+  db.query(sql, [email], (err, results) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).json({ error: "Database error" });
@@ -45,12 +45,14 @@ app.post("/api/login", (req, res) => {
 
     const user = results[0];
 
+    // Verify the password (plain-text check for now)
     if (password !== user.password) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    const role = email === "admin@gmail.com" ? "admin" : "user";
+    const role = user.role;  // Retrieve role from DB
 
+    // Generate JWT Token
     const token = jwt.sign({ id: user.id, email: user.email, role }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
