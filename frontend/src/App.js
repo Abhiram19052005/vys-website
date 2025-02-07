@@ -8,7 +8,7 @@ import Checkout from "./pages/Checkout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Navbar from "./components/Navbar";
-
+// rjgur
 function App() {
   return (
     <Router>
