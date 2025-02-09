@@ -1,8 +1,8 @@
 import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 
-function Login({ setIsAdmin }) {
+function Login({ setIsAdmin, setIsAuthenticated }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -22,10 +22,12 @@ function Login({ setIsAdmin }) {
         if (role === "admin") {
           localStorage.setItem("isAdmin", "true");
           setIsAdmin(true);
+          setIsAuthenticated(true);
           navigate("/admin");
         } else {
           localStorage.removeItem("isAdmin");
           setIsAdmin(false);
+          setIsAuthenticated(true);
           navigate("/products");
         }
       }
@@ -40,16 +42,37 @@ function Login({ setIsAdmin }) {
   };
 
   return (
-    <div>
+    <div style={styles.container}>
       <h2>Login</h2>
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p style={styles.error}>{error}</p>}
       <form onSubmit={handleLogin}>
         <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         <button type="submit">Login</button>
       </form>
+      <p>
+        Don't have an account? <Link to="/register" style={styles.registerLink}>Register Here</Link>
+      </p>
     </div>
   );
 }
+
+const styles = {
+  container: {
+    maxWidth: "400px",
+    margin: "auto",
+    padding: "20px",
+    textAlign: "center",
+    border: "1px solid #ddd",
+    borderRadius: "5px",
+  },
+  error: {
+    color: "red",
+  },
+  registerLink: {
+    color: "blue",
+    textDecoration: "underline",
+  },
+};
 
 export default Login;

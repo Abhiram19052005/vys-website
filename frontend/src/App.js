@@ -9,7 +9,7 @@ import Checkout from "./pages/Checkout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
-// Admin Pages
+// Admin Pages (Make Sure These Are Default Exports in Their Files)
 import AdminDashboard from "./admin/AdminDashboard";
 import ProtectedRoute from "./admin/ProtectedRoute";
 
@@ -43,7 +43,7 @@ function App() {
         {/* Admin Routes */}
         <Route 
           path="/admin" 
-          element={<ProtectedRoute element={<AdminDashboard />} isAuthenticated={isAdmin} />}
+          element={<ProtectedRoute Component={AdminDashboard} isAuthenticated={isAdmin} />}
         />
       </Routes>
     </Router>
