@@ -97,6 +97,37 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
+// ✅ Get All Users (Admin Only)
+app.get("/api/users", verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const [users] = await db.promise().query("SELECT id, name, email, role FROM users");
+    res.json(users);
+  } catch (error) {
+    console.error("❌ Error Fetching Users:", error);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+
+// ✅ Delete User (Admin Only)
+app.delete("/api/users/:id", verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    // Prevent admin from deleting themselves
+    if (req.user.id == userId) {
+      return res.status(403).json({ error: "You cannot delete yourself" });
+    }
+
+    await db.promise().query("DELETE FROM users WHERE id = ?", [userId]);
+    res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error("❌ Error Deleting User:", error);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+
 
 // ✅ Fetch All Products
 app.get("/api/products", async (req, res) => {
