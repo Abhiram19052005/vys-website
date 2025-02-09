@@ -6,6 +6,7 @@ function Login({ setIsAdmin, setIsAuthenticated }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -46,8 +47,31 @@ function Login({ setIsAdmin, setIsAuthenticated }) {
       <h2>Login</h2>
       {error && <p style={styles.error}>{error}</p>}
       <form onSubmit={handleLogin}>
-        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <input 
+          type="email" 
+          placeholder="Email" 
+          value={email} 
+          onChange={(e) => setEmail(e.target.value)} 
+          required 
+        />
+        
+        <div style={styles.passwordContainer}>
+          <input 
+            type={showPassword ? "text" : "password"} 
+            placeholder="Password" 
+            value={password} 
+            onChange={(e) => setPassword(e.target.value)} 
+            required 
+            style={styles.passwordInput}
+          />
+          <span 
+            onClick={() => setShowPassword(!showPassword)} 
+            style={styles.eyeIcon}
+          >
+            {showPassword ? "👁️" : "🔒"}
+          </span>
+        </div>
+
         <button type="submit">Login</button>
       </form>
       <p>
@@ -72,6 +96,21 @@ const styles = {
   registerLink: {
     color: "blue",
     textDecoration: "underline",
+  },
+  passwordContainer: {
+    display: "flex",
+    alignItems: "center",
+    position: "relative",
+  },
+  passwordInput: {
+    width: "100%",
+    paddingRight: "40px",
+  },
+  eyeIcon: {
+    position: "absolute",
+    right: "10px",
+    cursor: "pointer",
+    fontSize: "18px",
   },
 };
 
