@@ -17,8 +17,13 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    // Check if user is an admin on page load
+    const token = localStorage.getItem("token");
     const adminStatus = localStorage.getItem("isAdmin") === "true";
-    setIsAdmin(adminStatus);
+    
+    if (token) {
+      setIsAdmin(adminStatus);
+    }
   }, []);
 
   return (
