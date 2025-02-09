@@ -37,57 +37,19 @@ const verifyToken = (req, res, next) => {
   });
 };
 
+// 🔐 Middleware to Verify Admin Access
+const verifyAdmin = (req, res, next) => {
+  if (req.user.role !== "admin") return res.status(403).json({ error: "Unauthorized" });
+  next();
+};
 
-// Admin & User Login API
-app.post("/api/login", (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: "Email and password are required" });
-  }
-
-  const sql = "SELECT * FROM users WHERE email = ?";
-  db.query(sql, [email], (err, results) => {
-    if (err) {
-      console.error("Database error:", err);
-      return res.status(500).json({ error: "Database error" });
-    }
-
-    if (results.length === 0) {
-      return res.status(401).json({ error: "Invalid email or password" });
-    }
-
-    const user = results[0];
-
-    // Verify the password (plain-text check for now)
-    if (password !== user.password) {
-      return res.status(401).json({ error: "Invalid email or password" });
-    }
-
-    const role = user.role;  // Retrieve role from DB
-
-    // Generate JWT Token
-    const token = jwt.sign({ id: user.id, email: user.email, role }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
-
-    res.json({ message: "Login successful", token, role });
-  });
-});
-
-
+// 🔐 Register New User
 app.post("/api/register", async (req, res) => {
   const { name, email, password } = req.body;
+  if (!name || !email || !password) return res.status(400).json({ error: "All fields are required" });
 
-  if (!name || !email || !password) {
-    return res.status(400).json({ error: "All fields are required" });
-  }
-
-  // 🔐 Hash the password before storing it in the database
   const hashedPassword = await bcrypt.hash(password, 10);
-
-  db.query(
-    "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'user')", 
+  db.query("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'user')", 
     [name, email, hashedPassword], 
     (err) => {
       if (err) return res.status(500).json({ error: "Database error" });
@@ -96,19 +58,34 @@ app.post("/api/register", async (req, res) => {
   );
 });
 
+// 🔐 Login (Admin & Users)
+app.post("/api/login", (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: "Email and password are required" });
 
-// ✅ Get All Products
+  db.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    if (results.length === 0) return res.status(401).json({ error: "Invalid email or password" });
+
+    const user = results[0];
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) return res.status(401).json({ error: "Invalid email or password" });
+
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    res.json({ message: "Login successful", token, role: user.role });
+  });
+});
+
+// ✅ Fetch All Products
 app.get("/api/products", (req, res) => {
   db.query("SELECT * FROM products", (err, result) => {
-    if (err) return res.status(500).send(err);
+    if (err) return res.status(500).json({ error: "Database error" });
     res.json(result);
   });
 });
 
-// ✅ Add Product (Admin Only)
-app.post("/api/products", verifyToken, (req, res) => {
-  if (req.user.role !== "admin") return res.status(403).json({ error: "Unauthorized" });
-
+// ✅ Add New Product (Admin Only)
+app.post("/api/products", verifyToken, verifyAdmin, (req, res) => {
   const { name, description, price, stock, category, image } = req.body;
   db.query(
     "INSERT INTO products (name, description, price, stock, category, image) VALUES (?, ?, ?, ?, ?, ?)",
@@ -118,6 +95,14 @@ app.post("/api/products", verifyToken, (req, res) => {
       res.json({ message: "Product added successfully" });
     }
   );
+});
+
+// ✅ Delete Product (Admin Only)
+app.delete("/api/products/:id", verifyToken, verifyAdmin, (req, res) => {
+  db.query("DELETE FROM products WHERE id = ?", [req.params.id], (err) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    res.json({ message: "Product deleted successfully" });
+  });
 });
 
 // ✅ Add to Cart
@@ -133,15 +118,19 @@ app.post("/api/cart", verifyToken, (req, res) => {
   );
 });
 
-// ✅ Get Cart Items
+// ✅ Get User Cart Items
 app.get("/api/cart", verifyToken, (req, res) => {
-  db.query("SELECT * FROM cart WHERE user_id = ?", [req.user.id], (err, result) => {
-    if (err) return res.status(500).send(err);
-    res.json(result);
-  });
+  db.query(
+    "SELECT cart.id, products.name, products.price, cart.quantity FROM cart INNER JOIN products ON cart.product_id = products.id WHERE cart.user_id = ?",
+    [req.user.id],
+    (err, result) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      res.json(result);
+    }
+  );
 });
 
-// ✅ Remove from Cart
+// ✅ Remove Item from Cart
 app.delete("/api/cart/:id", verifyToken, (req, res) => {
   db.query("DELETE FROM cart WHERE id = ?", [req.params.id], (err) => {
     if (err) return res.status(500).json({ error: "Database error" });
@@ -151,10 +140,10 @@ app.delete("/api/cart/:id", verifyToken, (req, res) => {
 
 // ✅ Place Order
 app.post("/api/orders", verifyToken, (req, res) => {
-  const { total_price } = req.body;
+  const { total_price, payment_method } = req.body;
   db.query(
-    "INSERT INTO orders (user_id, total_price) VALUES (?, ?)",
-    [req.user.id, total_price],
+    "INSERT INTO orders (user_id, total_price, payment_method, status) VALUES (?, ?, ?, 'Processing')",
+    [req.user.id, total_price, payment_method],
     (err) => {
       if (err) return res.status(500).json({ error: "Database error" });
       res.json({ message: "Order placed successfully" });
@@ -165,12 +154,12 @@ app.post("/api/orders", verifyToken, (req, res) => {
 // ✅ Get User Orders
 app.get("/api/orders", verifyToken, (req, res) => {
   db.query("SELECT * FROM orders WHERE user_id = ?", [req.user.id], (err, result) => {
-    if (err) return res.status(500).send(err);
+    if (err) return res.status(500).json({ error: "Database error" });
     res.json(result);
   });
 });
 
-// ✅ Profile Update
+// ✅ Update Profile
 app.put("/api/profile", verifyToken, (req, res) => {
   const { name, email } = req.body;
   db.query("UPDATE users SET name = ?, email = ? WHERE id = ?", [name, email, req.user.id], (err) => {
@@ -182,7 +171,7 @@ app.put("/api/profile", verifyToken, (req, res) => {
 // ✅ Get User Profile
 app.get("/api/profile", verifyToken, (req, res) => {
   db.query("SELECT id, name, email, role FROM users WHERE id = ?", [req.user.id], (err, result) => {
-    if (err) return res.status(500).send(err);
+    if (err) return res.status(500).json({ error: "Database error" });
     res.json(result[0]);
   });
 });

@@ -1,12 +1,13 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-function Navbar({ isAdmin, setIsAdmin }) {
+function Navbar({ isAdmin, isAuthenticated, setIsAdmin, setIsAuthenticated }) {
   const navigate = useNavigate();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("isAdmin");
+    setIsAuthenticated(false);
     setIsAdmin(false);
     navigate("/login");
   };
@@ -21,12 +22,21 @@ function Navbar({ isAdmin, setIsAdmin }) {
             <li><Link to="/admin">Admin Dashboard</Link></li>
             <li><button onClick={handleLogout} style={styles.logoutButton}>Logout</button></li>
           </>
+        ) : isAuthenticated ? (
+          <>
+            <li><Link to="/">Home</Link></li>
+            <li><Link to="/products">Products</Link></li>
+            <li><Link to="/cart">Cart</Link></li>
+            <li><Link to="/checkout">Checkout</Link></li>
+            <li><button onClick={handleLogout} style={styles.logoutButton}>Logout</button></li>
+          </>
         ) : (
           <>
             <li><Link to="/">Home</Link></li>
             <li><Link to="/products">Products</Link></li>
             <li><Link to="/cart">Cart</Link></li>
             <li><Link to="/login">Login</Link></li>
+            <li><Link to="/register">Register</Link></li>
           </>
         )}
       </ul>
