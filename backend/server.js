@@ -1,7 +1,6 @@
 const express = require("express");
 const mysql = require("mysql2/promise");
 const cors = require("cors");
-const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
@@ -13,7 +12,8 @@ app.use(cors());
 const dbConfig = {
   host: "localhost",
   user: "root",
-  password: "root", // Change if needed
+  password: "Hariha@123-",  // Change if necessary
+  //password: "root", 
   database: "vys",
 };
 
