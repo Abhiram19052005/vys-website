@@ -20,23 +20,28 @@ function Login({ setIsAdmin, setIsAuthenticated }) {
         const { token, role } = response.data;
         localStorage.setItem("token", token);
 
+        // Update authentication state
+        setIsAuthenticated(true);
+
         if (role === "admin") {
           localStorage.setItem("isAdmin", "true");
           setIsAdmin(true);
-          setIsAuthenticated(true);
           navigate("/admin");
         } else {
           localStorage.removeItem("isAdmin");
           setIsAdmin(false);
-          setIsAuthenticated(true);
           navigate("/products");
         }
       }
     } catch (err) {
-      if (err.response && err.response.status === 401) {
-        setError("Invalid email or password");
+      if (err.response) {
+        if (err.response.status === 401) {
+          setError("❌ Invalid email or password");
+        } else {
+          setError("⚠️ An error occurred. Please try again.");
+        }
       } else {
-        setError("An error occurred. Please try again.");
+        setError("⚠️ Server not responding. Try again later.");
       }
       console.error("Login Error:", err);
     }
@@ -44,12 +49,12 @@ function Login({ setIsAdmin, setIsAuthenticated }) {
 
   return (
     <div style={styles.container}>
-      <h2>Login</h2>
+      <h2>🔐 Login</h2>
       {error && <p style={styles.error}>{error}</p>}
       <form onSubmit={handleLogin}>
         <input 
           type="email" 
-          placeholder="Email" 
+          placeholder="Enter your email" 
           value={email} 
           onChange={(e) => setEmail(e.target.value)} 
           required 
@@ -58,7 +63,7 @@ function Login({ setIsAdmin, setIsAuthenticated }) {
         <div style={styles.passwordContainer}>
           <input 
             type={showPassword ? "text" : "password"} 
-            placeholder="Password" 
+            placeholder="Enter your password" 
             value={password} 
             onChange={(e) => setPassword(e.target.value)} 
             required 
@@ -72,7 +77,7 @@ function Login({ setIsAdmin, setIsAuthenticated }) {
           </span>
         </div>
 
-        <button type="submit">Login</button>
+        <button type="submit" style={styles.loginButton}>Login</button>
       </form>
       <p>
         Don't have an account? <Link to="/register" style={styles.registerLink}>Register Here</Link>
@@ -89,28 +94,48 @@ const styles = {
     textAlign: "center",
     border: "1px solid #ddd",
     borderRadius: "5px",
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+    backgroundColor: "#fff",
   },
   error: {
     color: "red",
+    fontWeight: "bold",
+    marginBottom: "10px",
   },
   registerLink: {
     color: "blue",
     textDecoration: "underline",
+    fontWeight: "bold",
   },
   passwordContainer: {
     display: "flex",
     alignItems: "center",
     position: "relative",
+    width: "100%",
   },
   passwordInput: {
     width: "100%",
+    padding: "10px",
     paddingRight: "40px",
+    border: "1px solid #ccc",
+    borderRadius: "4px",
   },
   eyeIcon: {
     position: "absolute",
     right: "10px",
     cursor: "pointer",
     fontSize: "18px",
+  },
+  loginButton: {
+    width: "100%",
+    padding: "10px",
+    marginTop: "10px",
+    backgroundColor: "#007bff",
+    color: "#fff",
+    border: "none",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontSize: "16px",
   },
 };
 
