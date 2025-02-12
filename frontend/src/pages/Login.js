@@ -19,8 +19,6 @@ function Login({ setIsAdmin, setIsAuthenticated }) {
       if (response.status === 200) {
         const { token, role } = response.data;
         localStorage.setItem("token", token);
-
-        // Update authentication state
         setIsAuthenticated(true);
 
         if (role === "admin") {
@@ -34,14 +32,10 @@ function Login({ setIsAdmin, setIsAuthenticated }) {
         }
       }
     } catch (err) {
-      if (err.response) {
-        if (err.response.status === 401) {
-          setError("❌ Invalid email or password");
-        } else {
-          setError("⚠️ An error occurred. Please try again.");
-        }
+      if (err.response?.status === 401) {
+        setError("❌ Invalid email or password");
       } else {
-        setError("⚠️ Server not responding. Try again later.");
+        setError("⚠️ An error occurred. Please try again.");
       }
       console.error("Login Error:", err);
     }
@@ -77,6 +71,7 @@ function Login({ setIsAdmin, setIsAuthenticated }) {
           </span>
         </div>
 
+
         <button type="submit" style={styles.loginButton}>Login</button>
       </form>
       <p>
@@ -106,6 +101,11 @@ const styles = {
     color: "blue",
     textDecoration: "underline",
     fontWeight: "bold",
+  },
+  forgotPassword: {
+    textAlign: "right",
+    marginTop: "5px",
+    marginBottom: "10px",
   },
   passwordContainer: {
     display: "flex",

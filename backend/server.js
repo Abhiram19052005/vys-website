@@ -1,6 +1,7 @@
 const express = require("express");
 const mysql = require("mysql2/promise");
 const cors = require("cors");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
@@ -12,8 +13,7 @@ app.use(cors());
 const dbConfig = {
   host: "localhost",
   user: "root",
-  password: "Hariha@123-",  // Change if necessary
-  //password: "root", 
+  password: "root", // Change if needed
   database: "vys",
 };
 
@@ -158,7 +158,40 @@ function startServer() {
       res.status(500).json({ error: "Database error" });
     }
   });
-  
+
+ 
+
+
+  // ✅ Register New User API
+app.post("/api/register", async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    // Check if email already exists
+    const [existingUser] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
+    if (existingUser.length > 0) {
+      return res.status(400).json({ error: "Email is already registered" });
+    }
+
+    // Hash the password before storing it
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert user into database
+    await db.query("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'user')", 
+      [name, email, hashedPassword]);
+
+    res.json({ message: "User registered successfully" });
+  } catch (error) {
+    console.error("❌ Registration Error:", error);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+
+
   // ✅ Get All Users (Admin Only)
   app.get("/api/users", verifyToken, verifyAdmin, async (req, res) => {
     try {

@@ -9,7 +9,7 @@ import Checkout from "./pages/Checkout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
-// Admin Pages (Make Sure These Are Default Exports in Their Files)
+// Admin Pages (Ensure They Are Default Exports in Their Files)
 import AdminDashboard from "./admin/AdminDashboard";
 import ProtectedRoute from "./admin/ProtectedRoute";
 
@@ -20,7 +20,7 @@ function App() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     const adminStatus = localStorage.getItem("isAdmin") === "true";
-    
+
     if (token) {
       setIsAuthenticated(true);
       setIsAdmin(adminStatus);
@@ -43,7 +43,11 @@ function App() {
         {/* Admin Routes */}
         <Route 
           path="/admin" 
-          element={<ProtectedRoute Component={AdminDashboard} isAuthenticated={isAdmin} />}
+          element={
+            <ProtectedRoute isAuthenticated={isAdmin}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
         />
       </Routes>
     </Router>
