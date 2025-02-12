@@ -71,6 +71,10 @@ function Login({ setIsAdmin, setIsAuthenticated }) {
           </span>
         </div>
 
+        {/* Forgot Password Link */}
+        <p style={styles.forgotPassword}>
+          <Link to="/forgot-password">Forgot Password?</Link>
+        </p>
 
         <button type="submit" style={styles.loginButton}>Login</button>
       </form>

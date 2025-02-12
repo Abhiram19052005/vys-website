@@ -3,6 +3,8 @@ const mysql = require("mysql2/promise");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+const crypto = require("crypto");
 require("dotenv").config();
 
 const app = express();
@@ -160,6 +162,74 @@ function startServer() {
   });
 
  
+// Email Transporter Setup (Use your email credentials)
+const transporter = nodemailer.createTransport({
+  service: "Gmail", // Or use SMTP service like SendGrid
+  auth: {
+    user: "abhi.63044562@gmail.com", // Replace with your email
+    pass: "jxeu myyy nvcx cdjg", // Use an App Password for security
+  },
+});
+
+app.post("/api/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Email is required" });
+
+    const [users] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
+    if (users.length === 0) return res.status(404).json({ error: "User not found" });
+
+    const user = users[0];
+
+    // Generate Reset Token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const expiryTime = new Date(Date.now() + 3600000); // 1 hour expiry
+
+    // Save Reset Token in Database
+    await db.query("UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE email = ?", 
+      [resetToken, expiryTime, email]);
+
+    // Send Reset Email
+    const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
+    await transporter.sendMail({
+      from: "your-email@gmail.com",
+      to: email,
+      subject: "Password Reset Request",
+      html: `<p>Click <a href="${resetLink}">here</a> to reset your password. This link is valid for 1 hour.</p>`,
+    });
+
+    res.json({ message: "Reset password link sent to email" });
+  } catch (error) {
+    console.error("❌ Forgot Password Error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.post("/api/reset-password", async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) return res.status(400).json({ error: "Invalid request. Token and password are required." });
+
+    const [users] = await db.query("SELECT * FROM users WHERE reset_token = ? AND reset_token_expiry > NOW()", [token]);
+    if (users.length === 0) return res.status(400).json({ error: "Invalid or expired reset token." });
+
+    const user = users[0];
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user password and clear reset token
+    await db.query("UPDATE users SET password = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?", 
+      [hashedPassword, user.id]);
+
+    res.json({ message: "Password reset successful" });
+  } catch (error) {
+    console.error("❌ Reset Password Error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
 
 
   // ✅ Register New User API
