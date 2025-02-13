@@ -195,7 +195,7 @@ app.post("/api/forgot-password", async (req, res) => {
       from: "your-email@gmail.com",
       to: email,
       subject: "Password Reset Request",
-      html: `<p>Click <a href="${resetLink}">here</a> to reset your password. This link is valid for 1 hour.</p>`,
+      html: `<p>Click <a href="${resetLink}">here</a> to reset your password.</p>`,
     });
 
     res.json({ message: "Reset password link sent to email" });
