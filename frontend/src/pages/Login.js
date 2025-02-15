@@ -7,11 +7,13 @@ function Login({ setIsAdmin, setIsAuthenticated }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
       const response = await axios.post("http://localhost:5000/api/login", { email, password });
@@ -32,12 +34,16 @@ function Login({ setIsAdmin, setIsAuthenticated }) {
         }
       }
     } catch (err) {
-      if (err.response?.status === 401) {
-        setError("❌ Invalid email or password");
+      console.error("❌ Login Error:", err);
+      if (err.response?.status === 403) {
+        setError("❌ You do not have permission to access this resource.");
+      } else if (err.response?.status === 401) {
+        setError("❌ Invalid email or password.");
       } else {
         setError("⚠️ An error occurred. Please try again.");
       }
-      console.error("Login Error:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -76,7 +82,9 @@ function Login({ setIsAdmin, setIsAuthenticated }) {
           <Link to="/forgot-password">Forgot Password?</Link>
         </p>
 
-        <button type="submit" style={styles.loginButton}>Login</button>
+        <button type="submit" style={styles.loginButton} disabled={loading}>
+          {loading ? "Logging in..." : "Login"}
+        </button>
       </form>
       <p>
         Don't have an account? <Link to="/register" style={styles.registerLink}>Register Here</Link>

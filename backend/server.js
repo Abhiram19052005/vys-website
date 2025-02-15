@@ -133,23 +133,41 @@ function startServer() {
   app.post("/api/login", async (req, res) => {
     try {
       const { email, password } = req.body;
+      console.log(`🔍 Checking user: ${email}`);
+  
       if (!email || !password) return res.status(400).json({ error: "Email and password are required" });
   
       const [users] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
-      if (users.length === 0) return res.status(401).json({ error: "Invalid email or password" });
+  
+      if (users.length === 0) {
+        console.log(`❌ User not found: ${email}`);
+        return res.status(401).json({ error: "User not found" });
+      }
   
       const user = users[0];
       let passwordMatch = false;
   
-      if (user.email === "admin@gmail.com") {
-        // 🔹 Bypass bcrypt for admin (Compare directly)
-        passwordMatch = password === user.password;
-      } else {
-        // 🔹 Use bcrypt for all other users
+      // 🔹 Check if password is hashed
+      if (user.password.startsWith("$2a$")) {
         passwordMatch = await bcrypt.compare(password, user.password);
+      } else {
+        // 🔹 For old users (admin), directly compare plaintext passwords
+        passwordMatch = password === user.password;
+  
+        // 🔹 If plaintext password matches, hash it for future security
+        if (passwordMatch) {
+          const hashedPassword = await bcrypt.hash(user.password, 10);
+          await db.query("UPDATE users SET password = ? WHERE email = ?", [hashedPassword, email]);
+          console.log(`✅ Auto-hashed password for: ${email}`);
+        }
       }
   
-      if (!passwordMatch) return res.status(401).json({ error: "Invalid email or password" });
+      if (!passwordMatch) {
+        console.log(`❌ Incorrect password for: ${email}`);
+        return res.status(401).json({ error: "Incorrect email or password" });
+      }
+  
+      console.log(`✅ User authenticated: ${email}`);
   
       // 🔹 Generate JWT Token
       const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET || "defaultsecret", { expiresIn: "1h" });
@@ -160,6 +178,8 @@ function startServer() {
       res.status(500).json({ error: "Database error" });
     }
   });
+  
+  
 
  
 // Email Transporter Setup (Use your email credentials)
